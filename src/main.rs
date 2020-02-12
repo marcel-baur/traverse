@@ -1,8 +1,9 @@
 use crate::board::Square;
-use crate::logic::Game;
+use crate::logic::GameState;
 
 mod board;
 mod logic;
 fn main() {
-    let board = Game::create();
+    let board = GameState::create();
+    println!("{}", board);
 }

@@ -1,5 +1,6 @@
 use crate::board::{Colour, Figure, Square};
 use std::convert::TryFrom;
+use core::fmt;
 
 #[derive(PartialEq)]
 pub struct Move {
@@ -9,15 +10,15 @@ pub struct Move {
 
 type GameBoard = [[Option<Figure>; 8]; 8];
 
-pub struct Game {
+pub struct GameState {
     board: GameBoard,
     turn: Colour,
     current_move: u16,
 }
 
-impl Game {
-    pub fn create() -> Game {
-        let mut game = Game {
+impl GameState {
+    pub fn create() -> GameState {
+        let mut game = GameState {
             board: [[None; 8]; 8],
             current_move: 0,
             turn: Colour::White,
@@ -82,7 +83,40 @@ impl Game {
             self.turn = Colour::White;
         }
         Ok(())
+    }
+}
 
+impl fmt::Display for GameState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut horizontal_limiter = String::from("+");
+        for _ in 0..self.board.len() {
+            horizontal_limiter.push('-');
+        }
+        horizontal_limiter.push_str("+\n");
+        write!(f, "{}", horizontal_limiter)?;
+        for row in self.board.iter() {
+            write!(f, "|")?;
+            for field in row.iter() {
+                match field {
+                    Some(figure) => {
+                        match figure.colour {
+                            Colour::White => {
+                                write!(f, "x")?;
+                            },
+                            Colour::Red => {
+                                write!(f, "o")?;
+                            }
+                        }
+                    },
+                    None => {
+                        write!(f, " ");
+                    }
+                }
+            }
+            write!(f, "|")?;
+            write!(f, "\n")?;
+        }
+        write!(f, "{}", horizontal_limiter)
     }
 }
 
@@ -173,7 +207,7 @@ mod test {
 
     #[test]
     fn move_targets() {
-        let mut game = Game::create();
+        let mut game = GameState::create();
         let field1 = Square(3, 0);
         let targets = field1.move_targets();
         assert_eq!(targets, [Square(4,1), Square(2,1)]);
