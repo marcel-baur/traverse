@@ -1,11 +1,11 @@
 use crate::board::{Colour, Figure, Square};
-use std::convert::TryFrom;
 use core::fmt;
+use std::convert::TryFrom;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct Move {
-    from: Square,
-    to: Square,
+    pub from: Square,
+    pub to: Square,
 }
 
 type GameBoard = [[Option<Figure>; 8]; 8];
@@ -14,6 +14,7 @@ pub struct GameState {
     board: GameBoard,
     turn: Colour,
     current_move: u16,
+    move_log: Vec<Move>,
 }
 
 impl GameState {
@@ -22,12 +23,13 @@ impl GameState {
             board: [[None; 8]; 8],
             current_move: 0,
             turn: Colour::White,
+            move_log: Vec::new(),
         };
         game.populate_field();
         game
     }
 
-    pub fn populate_field(&mut self) {
+    fn populate_field(&mut self) {
         let mut vec_white = vec![];
         let mut vec_red = vec![];
         for j in 0..3 {
@@ -46,8 +48,6 @@ impl GameState {
             self.board[x][y] = Some(Figure::create(Colour::Red));
         }
     }
-
-    //    pub fn move_figure(&mut self, mv: &Move) -> Result
 
     pub fn handle_move(&mut self, game_move: Move) -> Result<(), String> {
         let allowed_moves = get_legal_moves(&self.board, &self.turn);
@@ -70,7 +70,7 @@ impl GameState {
         self.board[fx][fy] = None;
 
         self.current_move += 1;
-        let crowned = if (ty == 0 && piece.colour == Colour::Red) || (ty == 7 && piece.colour == Colour::White) {
+        if (ty == 0 && piece.colour == Colour::Red) || (ty == 7 && piece.colour == Colour::White) {
             self.board[tx][ty].unwrap().crowned = true;
             true
         } else {
@@ -82,6 +82,7 @@ impl GameState {
         } else {
             self.turn = Colour::White;
         }
+        self.move_log.push(game_move);
         Ok(())
     }
 }
@@ -91,6 +92,7 @@ impl fmt::Display for GameState {
         let mut horizontal_limiter = String::from("+");
         for _ in 0..self.board.len() {
             horizontal_limiter.push('-');
+            horizontal_limiter.push('-');
         }
         horizontal_limiter.push_str("+\n");
         write!(f, "{}", horizontal_limiter)?;
@@ -98,30 +100,29 @@ impl fmt::Display for GameState {
             write!(f, "|")?;
             for field in row.iter() {
                 match field {
-                    Some(figure) => {
-                        match figure.colour {
-                            Colour::White => {
-                                write!(f, "x")?;
-                            },
-                            Colour::Red => {
-                                write!(f, "o")?;
-                            }
+                    Some(figure) => match figure.colour {
+                        Colour::White => {
+                            write!(f, "x ")?;
+                        }
+                        Colour::Red => {
+                            write!(f, "o ")?;
                         }
                     },
                     None => {
-                        write!(f, " ");
+                        write!(f, "  ")?;
                     }
                 }
             }
             write!(f, "|")?;
-            write!(f, "\n")?;
+            writeln!(f)?;
         }
         write!(f, "{}", horizontal_limiter)
     }
 }
 
 fn get_crown(piece: Figure, square: Square) -> bool {
-    (square.1 == 0 && piece.colour == Colour::Red) || (square.1 == 7 && piece.colour == Colour::White)
+    (square.1 == 0 && piece.colour == Colour::Red)
+        || (square.1 == 7 && piece.colour == Colour::White)
 }
 
 fn to_i8(i: usize) -> i8 {
@@ -134,7 +135,6 @@ fn get_legal_moves(board: &GameBoard, turn: &Colour) -> Vec<Move> {
         for row in 0..8 {
             if let Some(piece) = board[col][row] {
                 if piece.colour == *turn {
-                    let current_field = Square(col, row);
                     moves.append(&mut moves_from_field(board, Square(col, row)))
                 }
             }
@@ -183,8 +183,6 @@ fn legal_jump(board: &GameBoard, piece: &Figure, from: &Square, to: &Square) -> 
         Some(p) if p.colour != piece.colour => true,
         _ => false,
     }
-
-    //    let midpiece = self.midpiece(x, y, tx, ty);
 }
 
 fn legal_move(board: &GameBoard, piece: &Figure, from: &Square, to: &Square) -> bool {
@@ -202,7 +200,7 @@ fn legal_move(board: &GameBoard, piece: &Figure, from: &Square, to: &Square) -> 
 
 #[cfg(test)]
 mod test {
-    use super::super::board::{Figure};
+    use super::super::board::Figure;
     use super::*;
 
     #[test]
@@ -210,10 +208,13 @@ mod test {
         let mut game = GameState::create();
         let field1 = Square(3, 0);
         let targets = field1.move_targets();
-        assert_eq!(targets, [Square(4,1), Square(2,1)]);
+        assert_eq!(targets, [Square(4, 1), Square(2, 1)]);
 
-        let field2 = Square(5,5);
+        let field2 = Square(5, 5);
         let targets2 = field2.move_targets();
-        assert_eq!(targets2, [Square(6, 4), Square(6, 6), Square(4, 4), Square(4, 6)]);
+        assert_eq!(
+            targets2,
+            [Square(6, 4), Square(6, 6), Square(4, 4), Square(4, 6)]
+        );
     }
 }
