@@ -1,3 +1,8 @@
+use crate::board::Square;
+use crate::logic::Game;
+
+mod board;
+mod logic;
 fn main() {
-    println!("Hello, world!");
+    let board = Game::create();
 }
