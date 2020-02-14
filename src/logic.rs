@@ -35,12 +35,13 @@ impl GameState {
         for j in 0..3 {
             for i in 0..8 {
                 if i % 2 == j % 2 {
-                    vec_white.push((i, j));
+                    vec_white.push((j, i));
                 } else {
-                    vec_red.push((i, 7 - j))
+                    vec_red.push(( 7 - j,i))
                 }
             }
         }
+        dbg!(&vec_white);
         for (x, y) in vec_white {
             self.board[x][y] = Some(Figure::create(Colour::White));
         }
@@ -52,10 +53,14 @@ impl GameState {
     pub fn handle_move(&mut self, game_move: Move) -> Result<(), String> {
         let allowed_moves = get_legal_moves(&self.board, &self.turn);
         if !allowed_moves.contains(&game_move) {
+            dbg!(&allowed_moves);
             return Err("Move not allowed!".to_string());
         };
         let Square(fx, fy) = game_move.from;
         let Square(tx, ty) = game_move.to;
+        if let Some(_t) = self.board[tx][ty] {
+            return Err("The target field already has a figure on it!".to_string())
+        };
         let piece = match self.board[fx][fy] {
             Some(piece) => piece,
             None => return Err("There is no piece on this field!".to_string()),
@@ -173,7 +178,7 @@ fn moves_from_field(board: &GameBoard, field: Square) -> Vec<Move> {
 fn jumped_figure(board: &GameBoard, from: &Square, to: &Square) -> Option<Figure> {
     let Square(fx, fy) = *from;
     let Square(tx, ty) = *to;
-    let x_m: i8 = to_i8(fx) - (to_i8(fx) - to_i8(fy)) / 2;
+    let x_m: i8 = to_i8(fx) - (to_i8(fx) - to_i8(tx)) / 2;
     let y_m: i8 = to_i8(fy) - (to_i8(fy) - to_i8(ty)) / 2;
     board[usize::try_from(x_m).unwrap()][usize::try_from(y_m).unwrap()]
 }
